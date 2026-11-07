@@ -98,7 +98,7 @@ Check `data_gate` in the output: G1 requires independent double scores. If human
 cp configs/models.example.yaml configs/local.models.yaml
 ```
 
-Replace every `REPLACE_WITH_*` placeholder and verify current official API pricing. Set keys only in the shell environment, for example `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `DEEPSEEK_API_KEY`, or `DASHSCOPE_API_KEY`. Do not paste keys into YAML, commits, issues, or chat. Reasoning-disable parameters are provider/model-specific; set them only after checking support for the selected dated model.
+Replace every `REPLACE_WITH_*` placeholder and verify current official API pricing. Set keys only in the shell environment, for example `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `DEEPSEEK_API_KEY`, or `DASHSCOPE_API_KEY`. Do not paste keys into YAML, commits, issues, or chat. Reasoning-disable parameters are provider/model-specific; set them only after checking support for the selected dated model. The preregistered six-family candidate, per-model budgets, smoke-test gates, and external-GPU requirement are documented in `docs/SIX_MODEL_PILOT.md`.
 
 ### 3. Preview, then explicitly execute
 
@@ -110,16 +110,16 @@ audit-raters score \
   --models configs/local.models.yaml \
   --db data/interim/pilot.sqlite
 
-# Full 6 × 2 × 2 × 2 factorial after reviewing the plan
+# Execute one model/currency in its own database after reviewing its plan
 audit-raters score \
   --essays data/processed/pilot.parquet \
   --anchors data/processed/anchors.parquet \
-  --models configs/local.models.yaml \
-  --db data/interim/pilot.sqlite \
-  --repeats 2 --workers 4 --max-cost 50 --execute
+  --models configs/local.one_model.yaml \
+  --db data/interim/one_model.sqlite \
+  --repeats 2 --workers 4 --max-cost 2 --execute
 ```
 
-The full plan has `50 × 6 models × 2 prompts × 2 rubrics × 2 runs = 2,400` calls. Repeating the command resumes non-API-error records. If budget is tight, follow the protocol's degradation order, starting with `--rubric-variants brief`; do not remove model families.
+After merging the per-model databases, the full plan has `50 × 6 models × 2 prompts × 2 rubrics × 2 runs = 2,400` calls. Repeating a command resumes non-API-error records. Never combine CNY and USD costs in one execution or cost cap; self-hosted GPU time needs a separate runtime budget. If budget is tight, follow the protocol's degradation order, starting with `--rubric-variants brief`; do not remove model families.
 
 ### 4. Analyze in the frozen order
 
