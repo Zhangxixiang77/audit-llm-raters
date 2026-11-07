@@ -31,7 +31,7 @@ class MFRMData:
         score_col: str = "score",
         scale_min: int = 0,
         scale_max: int | None = None,
-    ) -> "MFRMData":
+    ) -> MFRMData:
         required = {"essay_id", "rater_id", "item_id", score_col}
         missing = required - set(frame.columns)
         if missing:
@@ -292,9 +292,9 @@ def fit_mfrm_numpyro(
     """Optional full posterior. Returns ArviZ-compatible NumPyro MCMC object."""
     try:
         import jax.numpy as jnp
-        from jax import random
         import numpyro
         import numpyro.distributions as dist
+        from jax import random
         from numpyro.infer import MCMC, NUTS
     except ImportError as exc:
         raise ImportError("Install the 'bayes' extra: pip install -e '.[bayes]'") from exc

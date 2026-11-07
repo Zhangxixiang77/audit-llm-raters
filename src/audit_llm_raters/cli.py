@@ -9,7 +9,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from audit_llm_raters.adapters.tabular import dataset_gate_audit, normalize_essays, stratified_sample
+from audit_llm_raters.adapters.tabular import (
+    dataset_gate_audit,
+    normalize_essays,
+    stratified_sample,
+)
 from audit_llm_raters.analysis.pipeline import run_analysis
 from audit_llm_raters.config import load_yaml
 from audit_llm_raters.scoring.prompts import PromptLibrary

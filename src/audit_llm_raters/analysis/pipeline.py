@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +16,12 @@ import pandas as pd
 
 from audit_llm_raters.analysis.compression import compression_audit, target_stability
 from audit_llm_raters.analysis.drf import drf_bootstrap, ell_group_qwk
-from audit_llm_raters.analysis.gtheory import balanced_ems, bootstrap_multivariate_g, d_study, multivariate_g
+from audit_llm_raters.analysis.gtheory import (
+    balanced_ems,
+    bootstrap_multivariate_g,
+    d_study,
+    multivariate_g,
+)
 from audit_llm_raters.analysis.mfrm import MFRMData, fit_mfrm_map, scores_to_mfrm_long
 from audit_llm_raters.analysis.qc import failure_table, human_agreement, pilot_gates
 from audit_llm_raters.analysis.robust import analysis_matrices, failure_sensitivity
