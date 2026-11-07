@@ -1,0 +1,16 @@
+name: REPLACE_WITH_DATASET_NAME
+columns:
+  essay_id: REPLACE_ESSAY_ID
+  prompt_id: REPLACE_PROMPT_ID
+  essay_text: REPLACE_ESSAY_TEXT
+  human_r1: REPLACE_FIRST_INDEPENDENT_HUMAN_SCORE
+  human_r2: REPLACE_SECOND_INDEPENDENT_HUMAN_SCORE
+  human_rater1: null  # source column only if the person ID links across essays
+  human_rater2: null
+  ell: null  # source column coded 0/1 when available
+  scale_min: null  # optional source columns; otherwise use scale/scales_by_prompt
+  scale_max: null
+scale: {min: 1, max: 6}
+# scales_by_prompt:
+#   "prompt_a": {min: 1, max: 6}
+demographics: []

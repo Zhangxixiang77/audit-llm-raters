@@ -1,0 +1,46 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+configs/local*.yaml
+configs/local*.yml
+
+# Source essays and real model outputs are never committed
+data/raw/*
+data/interim/*
+data/processed/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+*.sqlite
+*.sqlite3
+*.db
+*.parquet
+
+# Generated results may contain sensitive essay-level information
+out/*
+!out/figures/
+!out/tables/
+out/figures/*
+out/tables/*
+!out/figures/.gitkeep
+!out/tables/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.venv/
+build/
+dist/
+
+# Editors / OS
+.DS_Store
+.vscode/
+.idea/

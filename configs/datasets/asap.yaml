@@ -1,0 +1,22 @@
+name: asap
+columns:
+  essay_id: essay_id
+  prompt_id: essay_set
+  essay_text: essay
+  human_r1: rater1_domain1
+  human_r2: rater2_domain1
+  human_rater1: null  # ASAP does not provide cross-essay person IDs in this table
+  human_rater2: null
+scale: {min: 0, max: 60}  # fallback only; per-prompt values below take precedence
+scales_by_prompt:
+  "1": {min: 2, max: 12}
+  "2": {min: 1, max: 6}
+  "3": {min: 0, max: 3}
+  "4": {min: 0, max: 3}
+  "5": {min: 0, max: 3}
+  "6": {min: 0, max: 3}
+  "7": {min: 0, max: 30}
+  "8": {min: 0, max: 60}
+demographics: []
+# G1 check: independently confirm the source file and double-score coverage.
+# No essay text or source table is redistributed by this repository.

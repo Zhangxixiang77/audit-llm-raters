@@ -1,0 +1,45 @@
+# Copy to configs/local.models.yaml (ignored by git), replace every placeholder,
+# verify dated model IDs and current official prices, then set a local cost cap.
+models:
+  - name: gpt
+    provider: openai_compatible
+    model_version: REPLACE_WITH_DATED_OPENAI_MODEL
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    temperature: 0
+    max_output_tokens: 200
+    # extra_body: {reasoning_effort: none}  # only if supported by the selected model
+    # pricing: {input_per_million: 0.0, output_per_million: 0.0}
+  - name: claude
+    provider: anthropic
+    model_version: REPLACE_WITH_DATED_CLAUDE_MODEL
+    api_key_env: ANTHROPIC_API_KEY
+    temperature: 0
+    max_output_tokens: 200
+  - name: gemini
+    provider: gemini
+    model_version: REPLACE_WITH_DATED_GEMINI_MODEL
+    api_key_env: GEMINI_API_KEY
+    temperature: 0
+    max_output_tokens: 200
+    # generation_config: {thinkingConfig: {thinkingBudget: 0}}  # verify model support
+  - name: deepseek
+    provider: openai_compatible
+    model_version: REPLACE_WITH_DATED_DEEPSEEK_MODEL
+    base_url: https://api.deepseek.com/v1
+    api_key_env: DEEPSEEK_API_KEY
+    temperature: 0
+    max_output_tokens: 200
+  - name: qwen
+    provider: openai_compatible
+    model_version: REPLACE_WITH_DATED_QWEN_MODEL
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api_key_env: DASHSCOPE_API_KEY
+    temperature: 0
+    max_output_tokens: 200
+  - name: llama
+    provider: openai_compatible
+    model_version: REPLACE_WITH_LOCAL_LLAMA_SNAPSHOT
+    base_url: http://localhost:8000/v1
+    temperature: 0
+    max_output_tokens: 200
