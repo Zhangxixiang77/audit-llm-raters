@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from audit_llm_raters.scoring.prompts import PromptLibrary
 from audit_llm_raters.scoring.run import build_tasks, run_scoring
@@ -34,3 +35,27 @@ def test_mock_scoring_is_resumable(tmp_path):
     assert len(frame) == 16
     assert frame["raw_response"].str.len().gt(0).all()
     assert frame["request_id"].nunique() == 16
+
+
+def test_mixed_cost_currencies_are_itemized_but_never_executed_together(tmp_path):
+    essays = _essays().iloc[:1]
+    anchors = _essays("a")
+    models = [
+        {
+            "name": "usd_model", "provider": "openai_compatible", "model_version": "usd-v1",
+            "currency": "USD", "pricing": {"input_per_million": 1, "output_per_million": 5},
+        },
+        {
+            "name": "cny_model", "provider": "openai_compatible", "model_version": "cny-v1",
+            "currency": "CNY", "pricing": {"input_per_million": 2, "output_per_million": 8},
+        },
+    ]
+    tasks = build_tasks(
+        essays, models, PromptLibrary(ROOT / "prompts/v1"), anchors,
+        ["zero_shot"], ["brief"], 1,
+    )
+    plan = run_scoring(tasks, tmp_path / "plan.sqlite", execute=False)
+    assert plan["estimated_cost_no_cache_or_batch_discount"] is None
+    assert set(plan["estimated_cost_by_currency"]) == {"USD", "CNY"}
+    with pytest.raises(ValueError, match="mixes cost currencies"):
+        run_scoring(tasks, tmp_path / "scores.sqlite", execute=True, max_cost=1)

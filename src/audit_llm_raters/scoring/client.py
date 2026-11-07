@@ -81,8 +81,11 @@ class OpenAICompatibleProvider(HttpProvider):
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            "max_tokens": int(self.config.get("max_output_tokens", 200)),
         }
+        token_field = str(self.config.get("max_tokens_field", "max_tokens"))
+        if token_field not in {"max_tokens", "max_completion_tokens"}:
+            raise ValueError("max_tokens_field must be max_tokens or max_completion_tokens")
+        body[token_field] = int(self.config.get("max_output_tokens", 200))
         if self.config.get("temperature", 0) is not None:
             body["temperature"] = float(self.config.get("temperature", 0))
         if self.config.get("json_mode", True):
@@ -181,7 +184,9 @@ class GeminiProvider(HttpProvider):
             )
         usage = payload.get("usageMetadata", {})
         tokens_in = usage.get("promptTokenCount")
-        tokens_out = usage.get("candidatesTokenCount")
+        candidate_tokens = usage.get("candidatesTokenCount")
+        thought_tokens = usage.get("thoughtsTokenCount") or 0
+        tokens_out = None if candidate_tokens is None else candidate_tokens + thought_tokens
         return ProviderResponse(
             content=content,
             raw_response=json.dumps(payload, ensure_ascii=False),

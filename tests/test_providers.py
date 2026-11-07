@@ -61,6 +61,24 @@ def test_openai_compatible_payload_retry_usage_and_cost(monkeypatch):
     assert result.metadata["finish_reason"] == "stop"
 
 
+def test_openai_compatible_supports_completion_token_field(monkeypatch):
+    def handler(request):
+        body = json.loads(request.content)
+        assert body["max_completion_tokens"] == 200
+        assert "max_tokens" not in body
+        return httpx.Response(200, json={
+            "choices": [{"message": {"content": '{"score": 4}'}}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+        })
+
+    _mock_http(monkeypatch, handler)
+    provider = OpenAICompatibleProvider({
+        "model_version": "reasoning-model", "base_url": "https://provider.test/v1",
+        "max_tokens_field": "max_completion_tokens",
+    })
+    assert provider.generate("system", "user").tokens_out == 5
+
+
 def test_openai_compatible_fatal_client_error_is_not_retried(monkeypatch):
     calls = 0
 
@@ -122,7 +140,9 @@ def test_gemini_payload_usage_and_cost(monkeypatch):
         assert "temperature" not in generation
         return httpx.Response(200, json={
             "candidates": [{"content": {"parts": [{"text": '{"score": 2}' }]}, "finishReason": "STOP"}],
-            "usageMetadata": {"promptTokenCount": 70, "candidatesTokenCount": 14},
+            "usageMetadata": {
+                "promptTokenCount": 70, "candidatesTokenCount": 14, "thoughtsTokenCount": 6,
+            },
         })
 
     _mock_http(monkeypatch, handler)
@@ -136,6 +156,6 @@ def test_gemini_payload_usage_and_cost(monkeypatch):
     result = provider.generate("system prompt", "essay prompt")
     assert result.content == '{"score": 2}'
     assert result.tokens_in == 70
-    assert result.tokens_out == 14
-    assert result.cost == pytest.approx(0.00028)
+    assert result.tokens_out == 20
+    assert result.cost == pytest.approx(0.00034)
     assert result.metadata["finish_reason"] == "STOP"

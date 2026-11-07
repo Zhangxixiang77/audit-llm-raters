@@ -146,29 +146,51 @@ def run_scoring(
     execute: bool = False,
     max_cost: float | None = None,
 ) -> dict[str, Any]:
-    estimated_cost = 0.0
+    real_tasks = [task for task in tasks if task.model.get("provider") != "mock"]
+    estimated_by_currency: dict[str, float] = {}
     pricing_complete = True
+    unpriced_tasks = 0
     for task in tasks:
         pricing = task.model.get("pricing")
         if not pricing:
             pricing_complete = False
+            unpriced_tasks += 1
             continue
+        currency = str(task.model.get("currency", "USD"))
         tokens_in = max(1, (len(task.system) + len(task.user)) // 4)
         tokens_out = int(task.model.get("max_output_tokens", 200))
-        estimated_cost += (
+        estimated_by_currency[currency] = estimated_by_currency.get(currency, 0.0) + (
             tokens_in * float(pricing.get("input_per_million", 0))
             + tokens_out * float(pricing.get("output_per_million", 0))
         ) / 1_000_000
     generic_rubrics = any("generic rubric" in task.system or "generic template" in task.system for task in tasks)
     if not execute:
+        one_currency_estimate = (
+            next(iter(estimated_by_currency.values()))
+            if pricing_complete and len(estimated_by_currency) == 1 else None
+        )
         return {
             "planned": len(tasks), "completed": 0, "cost": 0.0,
-            "estimated_cost_no_cache_or_batch_discount": estimated_cost if pricing_complete else None,
-            "pricing_complete": pricing_complete, "uses_generic_test_rubrics": generic_rubrics,
+            "estimated_cost_no_cache_or_batch_discount": one_currency_estimate,
+            "estimated_cost_by_currency": estimated_by_currency,
+            "pricing_complete": pricing_complete, "unpriced_tasks": unpriced_tasks,
+            "uses_generic_test_rubrics": generic_rubrics,
         }
-    real_tasks = [task for task in tasks if task.model.get("provider") != "mock"]
-    if any("REPLACE_WITH" in task.model["model_version"] for task in real_tasks):
-        raise ValueError("Replace model-version placeholders before real scoring")
+    real_currencies = {
+        str(task.model.get("currency", "USD")) for task in real_tasks if task.model.get("pricing")
+    }
+    if len(real_currencies) > 1:
+        currencies = ", ".join(sorted(real_currencies))
+        raise ValueError(
+            f"Real scoring mixes cost currencies ({currencies}). Run each currency in a separate "
+            "database so costs and hard caps are never added across currencies."
+        )
+    cost_currency = next(iter(real_currencies), None)
+    if any(
+        "REPLACE_WITH" in value
+        for task in real_tasks for value in task.model.values() if isinstance(value, str)
+    ):
+        raise ValueError("Replace model-version and source-revision placeholders before real scoring")
     if generic_rubrics and real_tasks:
         raise ValueError("Official prompt-specific rubrics are required before real scoring")
     if max_cost is not None and not pricing_complete:
@@ -189,8 +211,13 @@ def run_scoring(
                     session_cost += record.cost or 0.0
                     total_cost += record.cost or 0.0
                 if max_cost is not None and total_cost > max_cost:
+                    unit = cost_currency or "pricing units"
                     raise RuntimeError(
-                        f"Cost cap exceeded after a bounded worker batch: ${total_cost:.4f} > ${max_cost:.4f}. "
+                        f"Cost cap exceeded after a bounded worker batch: "
+                        f"{total_cost:.4f} {unit} > {max_cost:.4f} {unit}. "
                         "Completed calls are saved; inspect pricing before resuming."
                     )
-    return {"planned": len(tasks), "completed": completed, "cost": session_cost}
+    return {
+        "planned": len(tasks), "completed": completed,
+        "cost": session_cost, "cost_currency": cost_currency,
+    }
