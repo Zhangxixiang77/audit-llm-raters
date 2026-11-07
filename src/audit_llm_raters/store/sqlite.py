@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import pandas as pd
 
@@ -97,7 +97,7 @@ class ScoreStore:
     def close(self) -> None:
         self.connection.close()
 
-    def __enter__(self) -> "ScoreStore":
+    def __enter__(self) -> ScoreStore:
         return self
 
     def __exit__(self, *_: object) -> None:

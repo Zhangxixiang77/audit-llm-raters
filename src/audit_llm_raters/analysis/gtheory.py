@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from itertools import combinations
-from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -100,16 +100,16 @@ def multivariate_g(human: np.ndarray, llm: np.ndarray) -> dict[str, float | pd.D
     if human.ndim != 2 or llm.ndim != 2 or human.shape[0] != llm.shape[0]:
         raise ValueError("human and llm must be p × r matrices with the same p")
     h = two_facet_g(human, "h")
-    l = two_facet_g(llm, "l")
+    llm_g = two_facet_g(llm, "l")
     h_mean = human.mean(axis=1)
     l_mean = llm.mean(axis=1)
     covariance = float(np.cov(h_mean, l_mean, ddof=1)[0, 1])
     var_h = float(h["var_p"])
-    var_l = float(l["var_p"])
+    var_l = float(llm_g["var_p"])
     rho = covariance / np.sqrt(var_h * var_l) if var_h > 0 and var_l > 0 else np.nan
     var_pt = (var_h + var_l) / 2 - covariance
     residual_h = float(h["var_pr"]) / human.shape[1]
-    residual_l = float(l["var_pr"]) / llm.shape[1]
+    residual_l = float(llm_g["var_pr"]) / llm.shape[1]
     residual_mean = (residual_h + residual_l) / 2
     denominator = covariance + var_pt + residual_mean
     return {
@@ -123,9 +123,9 @@ def multivariate_g(human: np.ndarray, llm: np.ndarray) -> dict[str, float | pd.D
         "var_residual_L_per_essay": residual_l,
         "pi_pt": var_pt / denominator if denominator > 0 else np.nan,
         "Phi_H": float(h["Phi"]),
-        "Phi_L": float(l["Phi"]),
+        "Phi_L": float(llm_g["Phi"]),
         "human_components": h["components"],
-        "llm_components": l["components"],
+        "llm_components": llm_g["components"],
     }
 
 
@@ -157,16 +157,16 @@ def bootstrap_multivariate_g(
 
 def d_study(human: np.ndarray, llm: np.ndarray, model_counts: Iterable[int]) -> pd.DataFrame:
     h = two_facet_g(human, "h")
-    l = two_facet_g(llm, "l")
+    llm_g = two_facet_g(llm, "l")
     multivariate = multivariate_g(human, llm)
     rows = []
     for k in model_counts:
         if k < 1:
             raise ValueError("D-study model counts must be positive")
-        phi = float(l["var_p"]) / (
-            float(l["var_p"]) + (float(l["var_pr"]) + float(l["var_rater"])) / k
+        phi = float(llm_g["var_p"]) / (
+            float(llm_g["var_p"]) + (float(llm_g["var_pr"]) + float(llm_g["var_rater"])) / k
         )
-        var_ensemble = float(l["var_p"]) + float(l["var_pr"]) / k
+        var_ensemble = float(llm_g["var_p"]) + float(llm_g["var_pr"]) / k
         correlation = float(multivariate["cov_HL"]) / np.sqrt(
             float(h["var_p"]) * var_ensemble
         ) if var_ensemble > 0 and float(h["var_p"]) > 0 else np.nan

@@ -24,9 +24,9 @@ def fit_bayesian_multivariate_g(
         raise ValueError("Bayesian balanced G model requires complete matrices")
     try:
         import jax.numpy as jnp
-        from jax import random
         import numpyro
         import numpyro.distributions as dist
+        from jax import random
         from numpyro.infer import MCMC, NUTS
     except ImportError as exc:
         raise ImportError("Install the 'bayes' extra: pip install -e '.[bayes]'") from exc
