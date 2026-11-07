@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from audit_llm_raters.adapters.tabular import dataset_gate_audit, normalize_essays, stratified_sample
 from audit_llm_raters.analysis.robust import analysis_matrices
@@ -22,6 +23,12 @@ def test_dataset_normalization_sampling_and_gate(tmp_path):
     gate = dataset_gate_audit(essays)
     assert gate["G1_pass"]
     assert gate["human_design"] == "nested_within_essay"
+
+    filtered = normalize_essays(path, {**config, "prompt_ids": ["2"]})
+    assert set(filtered["prompt_id"]) == {"2"}
+    assert len(filtered) == 10
+    with pytest.raises(ValueError, match="prompt_ids"):
+        normalize_essays(path, {**config, "prompt_ids": ["9"]})
 
 
 def test_failure_floor_policy():

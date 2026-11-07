@@ -19,6 +19,9 @@ data/processed/*
 *.db
 *.parquet
 
+# Licensed prompt materials are local inputs and are not redistributed
+prompts/*/rubrics/*.txt
+
 # Generated results may contain sensitive essay-level information
 out/*
 !out/figures/

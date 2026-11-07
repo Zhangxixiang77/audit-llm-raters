@@ -74,6 +74,13 @@ def normalize_essays(path: str | Path, dataset_config: dict[str, Any]) -> pd.Dat
         index=frame.index,
     ) if demographics else "{}"
     result = result[ESSAY_COLUMNS]
+    requested_prompts = dataset_config.get("prompt_ids")
+    if requested_prompts:
+        requested = {str(prompt_id) for prompt_id in requested_prompts}
+        missing_prompts = sorted(requested - set(result["prompt_id"]))
+        if missing_prompts:
+            raise ValueError(f"Requested prompt_ids not found: {missing_prompts}")
+        result = result[result["prompt_id"].isin(requested)].reset_index(drop=True)
     if result["essay_id"].duplicated().any():
         raise ValueError("essay_id must be unique after normalization")
     if result["essay_text"].str.strip().eq("").any():

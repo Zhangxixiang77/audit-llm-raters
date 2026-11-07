@@ -49,16 +49,20 @@ The demo uses a deterministic mock provider and synthetic essays. Its output is 
 
 ### 1. Prepare source data locally
 
-Place the source table under `data/raw/`. These files are ignored by git and are not redistributed. Edit `configs/datasets/asap.yaml`, or copy `generic.example.yaml`, to match the actual columns. For another dataset, verify that scores are two independent human ratings rather than only an adjudicated score.
+Place the source table under `data/raw/`. The official Kaggle download can require login and acceptance of the competition terms; complete that access step rather than substituting an unverified mirror. These files are ignored by git and are not redistributed. Edit `configs/datasets/asap.yaml`, or copy `generic.example.yaml`, to match the actual columns. The ASAP config freezes the proposal's four-prompt pilot to prompts 1, 3, 7, and 8; change `prompt_ids` only if the protocol changes. For another dataset, verify that scores are two independent human ratings rather than only an adjudicated score.
 
 For a custom prompt, put the official rubrics here:
+
+```bash
+mkdir -p prompts/v1/rubrics
+```
 
 ```text
 prompts/v1/rubrics/<prompt_id>_brief.txt
 prompts/v1/rubrics/<prompt_id>_detailed.txt
 ```
 
-The generic rubrics shipped at the top level are software-test placeholders, not valid substitutes for an empirical rubric.
+Include the complete assignment and any required source text in these files. Prompt-specific rubric files are local, git-ignored research inputs. The generic rubrics shipped at the top level are software-test placeholders, not valid substitutes for an empirical rubric.
 
 ```bash
 audit-raters prepare \
