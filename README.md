@@ -43,7 +43,7 @@ audit-raters validate --replications 30 --output out/validation
 audit-raters demo --output out/demo
 ```
 
-The demo uses a deterministic mock provider and synthetic essays. Its output is only an integration test and must never be reported as an empirical result.
+The demo uses a deterministic mock provider and synthetic essays. Its output is only an integration test and must never be reported as an empirical result. Provider contract tests use local mock HTTP transports and never make paid calls; the two NumPyro smoke tests are skipped automatically when the `bayes` extra is absent.
 
 ## Run the real 50-essay pilot
 
