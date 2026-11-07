@@ -1,7 +1,11 @@
 import pandas as pd
 import pytest
 
-from audit_llm_raters.adapters.tabular import dataset_gate_audit, normalize_essays, stratified_sample
+from audit_llm_raters.adapters.tabular import (
+    dataset_gate_audit,
+    normalize_essays,
+    stratified_sample,
+)
 from audit_llm_raters.analysis.robust import analysis_matrices
 
 

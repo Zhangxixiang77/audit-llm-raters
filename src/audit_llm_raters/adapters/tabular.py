@@ -63,7 +63,7 @@ def normalize_essays(path: str | Path, dataset_config: dict[str, Any]) -> pd.Dat
     rater1 = get("human_rater1", "").fillna("").astype(str)
     rater2 = get("human_rater2", "").fillna("").astype(str)
     result["human_rater_ids"] = pd.Series(
-        [json.dumps([a, b]) for a, b in zip(rater1, rater2)], index=frame.index
+        [json.dumps([a, b]) for a, b in zip(rater1, rater2, strict=False)], index=frame.index
     )
     demographics = dataset_config.get("demographics", [])
     missing_demo = [column for column in demographics if column not in frame.columns]

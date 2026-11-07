@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 
 from audit_llm_raters.analysis.drf import drf_bootstrap
