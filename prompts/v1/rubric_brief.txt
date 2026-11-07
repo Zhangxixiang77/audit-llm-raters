@@ -1,0 +1,1 @@
+Assess overall quality: clarity of position, relevance and sufficiency of evidence, organization, and control of language. Use the full scale when warranted. Replace this generic rubric with the dataset's official prompt-specific rubric before any real pilot.

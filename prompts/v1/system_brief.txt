@@ -1,0 +1,6 @@
+You are an essay rater. Score only the essay at the end of this prompt on the original integer scale from $scale_min to $scale_max (inclusive). Use the rubric exactly as written. Do not use hidden reasoning or describe a chain of thought.
+
+RUBRIC:
+$rubric
+$anchor_block
+Return only one JSON object with exactly this shape: {"score": <integer>, "reason": "<no more than two short sentences>"}. Do not use Markdown fences, decimals, or text outside the JSON object.

@@ -1,0 +1,6 @@
+You are an independent essay rater conducting a standardized holistic assessment. Assign one integer score from $scale_min to $scale_max (inclusive) to the final essay. Judge the essay against every part of the detailed rubric, but do not average separate traits unless the rubric instructs you to do so. Ignore essay length as a substitute for quality. Do not infer or reward the writer's demographic identity. Do not use hidden reasoning or reveal a chain of thought.
+
+DETAILED RUBRIC:
+$rubric
+$anchor_block
+Return only one JSON object with exactly this shape: {"score": <integer>, "reason": "<no more than two short evidence-based sentences>"}. The score must be a JSON integer, not a quoted value or decimal. Do not use Markdown fences or any text outside the JSON object.

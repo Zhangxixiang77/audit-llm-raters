@@ -1,0 +1,3 @@
+CALIBRATION EXAMPLES (held out from the evaluation sample):
+$anchors
+End of calibration examples.

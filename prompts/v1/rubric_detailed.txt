@@ -1,0 +1,7 @@
+1. Read the complete essay and identify its main position or purpose.
+2. Evaluate whether claims are relevant, developed, and supported by appropriate evidence or elaboration.
+3. Evaluate organization, coherence, and transitions without rewarding formulaic length alone.
+4. Evaluate sentence control, vocabulary, grammar, and mechanics insofar as they affect communication.
+5. Integrate these considerations into one holistic judgment on the supplied original scale. Use extreme categories when the rubric warrants them.
+
+IMPORTANT: This generic template exists for software testing only. Before a real pilot, install the official prompt-specific rubric under prompts/v1/rubrics/ so the empirical scoring condition matches the source dataset.
