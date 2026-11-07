@@ -14,7 +14,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from audit_llm_raters.adapters.tabular import dataset_gate_audit
 from audit_llm_raters.analysis.compression import compression_audit, target_stability
+from audit_llm_raters.analysis.descriptive import bootstrap_observed_metrics, observed_metrics
 from audit_llm_raters.analysis.drf import drf_bootstrap, ell_group_qwk
 from audit_llm_raters.analysis.gtheory import (
     balanced_ems,
@@ -61,6 +63,24 @@ def factorial_ems(scores: pd.DataFrame) -> pd.DataFrame:
     return balanced_ems(values, ["p", "m", "v", "q", "e"])
 
 
+def configuration_ems(scores: pd.DataFrame) -> pd.DataFrame:
+    """Fixed-model p × prompt × rubric × repeat EMS; model variance is excluded."""
+    if scores["model"].nunique() != 1:
+        raise ValueError("Configuration EMS is only for a single fixed model")
+    facets = ["essay_id", "prompt_variant", "rubric_variant", "run_id"]
+    valid = scores[scores["parse_status"] == "ok"].copy()
+    levels = [sorted(valid[facet].unique()) for facet in facets]
+    expected = int(np.prod([len(level) for level in levels]))
+    cell = valid.groupby(facets)["parsed_score"].mean()
+    if len(cell) != expected:
+        raise ValueError(f"Unbalanced design: observed {len(cell)} of {expected} cells")
+    full_index = pd.MultiIndex.from_product(levels, names=facets)
+    values = cell.reindex(full_index).to_numpy().reshape([len(level) for level in levels])
+    if not np.isfinite(values).all():
+        raise ValueError("Balanced EMS received missing cells")
+    return balanced_ems(values, ["p", "v", "q", "e"])
+
+
 def _plot_d_study(frame: pd.DataFrame, path: Path) -> None:
     figure, axis = plt.subplots(figsize=(7, 4.5))
     axis.plot(frame["n_models"], frame["Phi_L"], marker="o", label="LLM-only Φ")
@@ -101,30 +121,54 @@ def run_analysis(
     _save(gates["config_failure_rates"], tables, "01_G3_config_failures")
     _save(gates["residual_correlation_matrix"].reset_index(), tables, "01_G2_residual_correlations")
 
-    human, llm, metadata = analysis_matrices(scores, "missing")
-    multivariate = multivariate_g(human, llm)
-    summary["multivariate_g"] = {key: value for key, value in multivariate.items() if not isinstance(value, pd.DataFrame)}
-    _save(multivariate["human_components"], tables, "02_G_human_components")
-    _save(multivariate["llm_components"], tables, "02_G_llm_components")
-    if bootstrap:
-        _save(bootstrap_multivariate_g(human, llm, bootstrap, seed), tables, "02_G_bootstrap_ci")
-    if bayes_g:
-        from audit_llm_raters.analysis.bayes_g import fit_bayesian_multivariate_g, posterior_summary
-        bayesian = fit_bayesian_multivariate_g(human, llm, seed=seed)
-        posterior = posterior_summary(bayesian)
-        _save(posterior, tables, "02_G_bayesian_posterior")
-        comparison = posterior[["estimand", "posterior_mean"]].copy()
-        comparison["EMS_estimate"] = comparison["estimand"].map(multivariate)
-        _save(comparison, tables, "06_EMS_vs_bayesian")
-    curves = d_study(human, llm, range(1, max(10, llm.shape[1] * 2) + 1))
-    _save(curves, tables, "02_D_study")
-    _plot_d_study(curves, figures / "02_D_study.png")
-    try:
-        _save(factorial_ems(scores), tables, "02_G_full_factorial_EMS")
-    except ValueError as exc:
-        summary["full_factorial_EMS_note"] = str(exc)
+    n_models = scores["model"].nunique()
+    if n_models >= 2:
+        human, llm, metadata = analysis_matrices(scores, "missing")
+        multivariate = multivariate_g(human, llm)
+        summary["multivariate_g"] = {key: value for key, value in multivariate.items() if not isinstance(value, pd.DataFrame)}
+        _save(multivariate["human_components"], tables, "02_G_human_components")
+        _save(multivariate["llm_components"], tables, "02_G_llm_components")
+        if bootstrap:
+            _save(bootstrap_multivariate_g(human, llm, bootstrap, seed), tables, "02_G_bootstrap_ci")
+        if bayes_g:
+            from audit_llm_raters.analysis.bayes_g import (
+                fit_bayesian_multivariate_g,
+                posterior_summary,
+            )
+            bayesian = fit_bayesian_multivariate_g(human, llm, seed=seed)
+            posterior = posterior_summary(bayesian)
+            _save(posterior, tables, "02_G_bayesian_posterior")
+            comparison = posterior[["estimand", "posterior_mean"]].copy()
+            comparison["EMS_estimate"] = comparison["estimand"].map(multivariate)
+            _save(comparison, tables, "06_EMS_vs_bayesian")
+        curves = d_study(human, llm, range(1, max(10, llm.shape[1] * 2) + 1))
+        _save(curves, tables, "02_D_study")
+        _plot_d_study(curves, figures / "02_D_study.png")
+        try:
+            _save(factorial_ems(scores), tables, "02_G_full_factorial_EMS")
+        except ValueError as exc:
+            summary["full_factorial_EMS_note"] = str(exc)
+    else:
+        reason = "A single fixed model cannot estimate a model facet, cross-model shared error, or a multi-model ensemble D-study."
+        summary["multivariate_g"] = {"status": "not_estimable", "n_models": int(n_models), "reason": reason}
+        summary["d_study"] = {"status": "not_estimable", "reason": reason}
+        _save(pd.DataFrame({
+            "estimand": ["rho_HL", "pi_pt", "Phi_L", "multi_model_D_study", "G2_cross_model_residual_correlation"],
+            "status": ["not_estimable"] * 5,
+            "reason": [reason] * 5,
+        }), tables, "02_G_D_not_estimable")
+        overall, configurations = observed_metrics(scores)
+        _save(overall, tables, "02_single_model_observed_metrics")
+        _save(configurations, tables, "02_single_model_configuration_metrics")
+        if bootstrap:
+            _save(bootstrap_observed_metrics(scores, bootstrap, seed), tables, "02_single_model_observed_bootstrap_ci")
+        _save(configuration_ems(scores), tables, "02_G_single_model_configuration_EMS")
 
-    long_frame = scores_to_mfrm_long(scores, include_human=True)
+    human_gate = dataset_gate_audit(essays)
+    summary["human_design"] = human_gate
+    long_frame = scores_to_mfrm_long(
+        scores, include_human=True, human_crossed=human_gate["human_design"] == "crossed"
+    )
     mfrm_summaries = []
     for prompt_id, group in long_frame.groupby("item_id"):
         scale_min = int(group["scale_min"].iloc[0])
@@ -145,19 +189,38 @@ def run_analysis(
     if not compression.empty:
         _save(target_stability(compression), tables, "04_target_stability")
 
-    if scores.get("ell", pd.Series(dtype=float)).notna().any():
+    ell = scores.get("ell", pd.Series(dtype=float))
+    if ell.notna().any():
         _save(ell_group_qwk(scores), tables, "05_QWK_by_ELL")
-        if drf_boot:
-            drf_outputs = []
-            for prompt_id, group in long_frame.groupby("item_id"):
-                if group["ell"].nunique() < 2:
-                    continue
-                drf = drf_bootstrap(group, int(group["scale_min"].iloc[0]), int(group["scale_max"].iloc[0]), drf_boot, seed)
-                drf.insert(0, "prompt_id", prompt_id)
-                drf_outputs.append(drf)
-            if drf_outputs:
-                _save(pd.concat(drf_outputs, ignore_index=True), tables, "05_DRF")
+    if ell.notna().sum() == 0 or ell.nunique() < 2:
+        summary["DRF"] = {
+            "status": "not_estimable",
+            "reason": "ELL versus non-ELL DRF requires both groups with observed indicators; this sample does not contain both groups.",
+        }
+    elif drf_boot:
+        drf_outputs = []
+        for prompt_id, group in long_frame.groupby("item_id"):
+            if group["ell"].nunique() < 2:
+                continue
+            drf = drf_bootstrap(group, int(group["scale_min"].iloc[0]), int(group["scale_max"].iloc[0]), drf_boot, seed)
+            drf.insert(0, "prompt_id", prompt_id)
+            drf_outputs.append(drf)
+        if drf_outputs:
+            _save(pd.concat(drf_outputs, ignore_index=True), tables, "05_DRF")
 
-    _save(failure_sensitivity(scores), tables, "06_failure_sensitivity")
+    if n_models >= 2:
+        _save(failure_sensitivity(scores), tables, "06_failure_sensitivity")
+    else:
+        sensitivity = []
+        for policy in ["missing", "floor"]:
+            work = scores.copy()
+            if policy == "floor":
+                work.loc[work["parse_status"] != "ok", "parsed_score"] = work["scale_min"]
+                work.loc[work["parse_status"] != "ok", "parse_status"] = "ok"
+            overall, _ = observed_metrics(work)
+            overall.insert(1, "failure_policy", policy)
+            overall["multivariate_g_status"] = "not_estimable_single_model"
+            sensitivity.append(overall)
+        _save(pd.concat(sensitivity, ignore_index=True), tables, "06_failure_sensitivity")
     (output / "summary.json").write_text(json.dumps(_json_value(summary), indent=2, ensure_ascii=False), encoding="utf-8")
     return summary
