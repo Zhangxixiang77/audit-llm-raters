@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from audit_llm_raters.analysis.gtheory import balanced_ems, multivariate_g, two_facet_g
 from audit_llm_raters.sim.generate import simulate_crossed_facets, simulate_shared_error
@@ -38,3 +39,17 @@ def test_full_factorial_simulation_recovers_major_components():
     assert abs(components["p:m"] - 0.16) < 0.06
     assert abs(components["p:v"] - 0.09) < 0.06
     assert abs(components["p:m:v:e"] - 0.25) < 0.05
+
+
+def test_bayesian_multivariate_g_smoke():
+    pytest.importorskip("numpyro")
+    from audit_llm_raters.analysis.bayes_g import fit_bayesian_multivariate_g, posterior_summary
+
+    rng = np.random.default_rng(20261107)
+    universe = rng.normal(size=(6, 2))
+    human = universe[:, 0, None] + rng.normal(scale=0.3, size=(6, 2))
+    llm = universe[:, 1, None] + rng.normal(scale=0.3, size=(6, 3))
+    mcmc = fit_bayesian_multivariate_g(human, llm, num_warmup=5, num_samples=5, num_chains=1)
+    summary = posterior_summary(mcmc)
+    assert np.isfinite(summary[["posterior_mean", "ci_lower", "ci_upper"]].to_numpy()).all()
+    assert summary["n_draws"].eq(5).all()

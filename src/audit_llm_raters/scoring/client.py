@@ -52,11 +52,13 @@ class HttpProvider:
                     response = client.send(request)
                 if response.status_code == 429 or response.status_code >= 500:
                     last_error = f"HTTP {response.status_code}: {response.text}"
-                    retry_after = response.headers.get("Retry-After")
-                    delay = float(retry_after) if retry_after else min(60, 2**attempt)
-                    time.sleep(delay + random.random())
+                    if attempt + 1 < self.max_retries:
+                        retry_after = response.headers.get("Retry-After")
+                        delay = float(retry_after) if retry_after else min(60, 2**attempt)
+                        time.sleep(delay + random.random())
                     continue
-                response.raise_for_status()
+                if response.is_error:
+                    raise RuntimeError(f"Provider returned HTTP {response.status_code}: {response.text}")
                 return response.json()
             except (httpx.HTTPError, ValueError) as exc:
                 last_error = str(exc)
