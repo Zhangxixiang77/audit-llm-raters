@@ -66,3 +66,19 @@ audit-raters prepare \
 The executed local draw contains 50 pilot essays and 100 disjoint held-out anchors. Every pilot essay has two independent scores. The pilot covers all nine possible half-point means from 1.0 through 5.0, 28 original writing topics, and 23 human raters. These are sampling diagnostics, not empirical LLM results.
 
 Local brief and detailed holistic rubrics are derived from `ELL_Rubrics.docx` and stored as `prompts/v1/rubrics/overall_{brief,detailed}.txt`. They are intentionally git-ignored with the other official prompt materials. The no-provider planning run expanded the full design to 2,400 tasks and confirmed that no generic test rubric was used. No paid provider call has been made.
+
+## ASAP 2.0 audit
+
+Official source: [scrosseye/ASAP_2.0](https://github.com/scrosseye/ASAP_2.0), inspected at commit `060ab225ca0984c0bf43ff222bf6bb2bc6195b6f`. The repository README states that the data are provided under **CC BY 4.0**. The training archive, seven source-text PDFs, and official 1–6 holistic rubric were downloaded locally.
+
+| File | SHA-256 |
+| --- | --- |
+| `ASAP_2_Final_github_train.zip` | `aec01e98eb16cc3bc3828010ca053a09daecc2821dd2105f8a7333089271beb4` |
+| `ASAP_2_source_texts.zip` | `8655d7df4f78871cba6b8afc83a6a9df796be89f86d93c54f10dd61dd1d65d71` |
+| `asap_scoring_rubric.docx` | `578edb71fd66c5f51e99b8d8bc24b038fcf819d91ad896d118b3736711c46403` |
+
+The training table contains 17,307 unique essays across seven source-based prompts. Every row has one holistic `score` on the 1–6 scale, but there are no independent rater-1/rater-2 columns or human rater IDs. It therefore does **not** independently satisfy G1 and must not be converted into a pseudo-double-scored dataset by copying `score` into two columns.
+
+The table does contain the variables needed for the proposal's optional focused DRF analysis: 2,269 essays are marked `ell_status = Yes`, 14,798 are marked `No`, and 240 have missing ELL status. All seven prompts have both ELL and non-ELL essays, although their ELL counts are unequal. Eighteen rows lack the assignment text. The official source PDFs and rubric must be included in any subsequent prompt-specific scoring inputs.
+
+Current decision: ELLIPSE is the prepared G1-passing pilot source; ASAP 2.0 remains a candidate for the separate RQ3/DRF extension using its single human score. No primary-estimand or study-design change is implied by this decision.
