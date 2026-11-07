@@ -78,9 +78,11 @@ def pilot_gates(scores: pd.DataFrame, failure_budget: float = 0.05, g2_threshold
     work["failed"] = work["parse_status"] != "ok"
     config_failure = work.groupby(["model", "prompt_variant", "rubric_variant"])["failed"].mean()
     g2 = residual_correlation(scores)
+    g2_estimable = g2["n_pairs"] > 0
     return {
         "G2_mean_residual_correlation": g2["mean_pairwise_residual_correlation"],
-        "G2_pass": bool(g2["mean_pairwise_residual_correlation"] >= g2_threshold),
+        "G2_pass": bool(g2["mean_pairwise_residual_correlation"] >= g2_threshold) if g2_estimable else None,
+        "G2_status": "estimable" if g2_estimable else "not_estimable_single_model",
         "G3_max_config_failure_rate": float(config_failure.max()),
         "G3_pass": bool(config_failure.max() < failure_budget),
         "config_failure_rates": config_failure.reset_index(name="failure_rate"),

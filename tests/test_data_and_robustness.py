@@ -6,6 +6,7 @@ from audit_llm_raters.adapters.tabular import (
     normalize_essays,
     stratified_sample,
 )
+from audit_llm_raters.analysis.pipeline import run_analysis
 from audit_llm_raters.analysis.robust import analysis_matrices
 
 
@@ -48,3 +49,27 @@ def test_failure_floor_policy():
     assert missing["n_essays"].iloc[0] == 5
     assert floor["n_essays"].iloc[0] == 6
     assert llm[0, 1] == 1
+
+
+def test_single_model_analysis_is_explicitly_limited(tmp_path):
+    rows = []
+    for essay in range(12):
+        for prompt_variant in ["zero_shot", "anchored"]:
+            for rubric_variant in ["brief", "detailed"]:
+                for run_id in [1, 2]:
+                    rows.append({
+                        "essay_id": str(essay), "dataset": "toy", "prompt_id": "overall",
+                        "model": "only_model", "prompt_variant": prompt_variant,
+                        "rubric_variant": rubric_variant, "run_id": run_id,
+                        "parsed_score": 1 + (essay + run_id) % 4, "parse_status": "ok",
+                        "scale_min": 1, "scale_max": 5, "human_r1": 1 + essay % 4,
+                        "human_r2": 1 + (essay + 1) % 4, "human_rater_ids": "[]", "ell": 1,
+                    })
+    summary = run_analysis(pd.DataFrame(rows), tmp_path, bootstrap=20)
+    assert summary["multivariate_g"]["status"] == "not_estimable"
+    assert summary["d_study"]["status"] == "not_estimable"
+    assert summary["pilot_gates"]["G2_pass"] is None
+    assert summary["DRF"]["status"] == "not_estimable"
+    assert (tmp_path / "tables" / "02_single_model_observed_metrics.csv").exists()
+    assert (tmp_path / "tables" / "02_G_single_model_configuration_EMS.csv").exists()
+    assert not (tmp_path / "tables" / "02_G_bootstrap_ci.csv").exists()
