@@ -51,6 +51,23 @@ The demo uses a deterministic mock provider and synthetic essays. Its output is 
 
 Place the source table under `data/raw/`. The official Kaggle download can require login and acceptance of the competition terms; complete that access step rather than substituting an unverified mirror. These files are ignored by git and are not redistributed. Edit `configs/datasets/asap.yaml`, or copy `generic.example.yaml`, to match the actual columns. The ASAP config freezes the proposal's four-prompt pilot to prompts 1, 3, 7, and 8; change `prompt_ids` only if the protocol changes. For another dataset, verify that scores are two independent human ratings rather than only an adjudicated score.
 
+ELLIPSE is directly available from its [official repository](https://github.com/scrosseye/ELLIPSE-Corpus) under CC BY 4.0. Its raw-rating archive supplies two independent 1–5 scores and cross-essay rater IDs. After extracting that archive with the authors' published password `ellipse_raw_data`, run:
+
+```bash
+audit-raters prepare-ellipse \
+  --raw-ratings data/raw/ellipse/raw_raters/ellipsis_raw_rater_scores_anon_all_essay.csv \
+  --metadata data/raw/ellipse/ELLIPSE_Final_github_train.csv
+
+audit-raters prepare \
+  --input data/interim/ellipse_overall.csv \
+  --dataset-config configs/datasets/ellipse.yaml \
+  --n 50 --anchor-pool 100 \
+  --output data/processed/ellipse_pilot50.parquet \
+  --anchor-output data/processed/ellipse_anchors100.parquet
+```
+
+The ELLIPSE preparation excludes unmatched records, zero/out-of-range raw scores, and identifying-information flags; it never substitutes the published average for either independent rating. See `docs/DATA_SOURCES.md` for provenance, source hashes, aggregate diagnostics, and the all-ELL limitation for RQ3.
+
 For a custom prompt, put the official rubrics here:
 
 ```bash
@@ -142,4 +159,4 @@ data/             local-only raw/interim/processed data
 out/              local-only generated figures and tables
 ```
 
-See `docs/METHODS.md` for estimators and `docs/REAL_PILOT_CHECKLIST.md` for the go/no-go checklist. All synthetic defaults use seed `20261107`; empirical reports should disclose every override.
+See `docs/METHODS.md` for estimators, `docs/DATA_SOURCES.md` for ELLIPSE provenance and preparation, and `docs/REAL_PILOT_CHECKLIST.md` for the go/no-go checklist. All synthetic defaults use seed `20261107`; empirical reports should disclose every override.

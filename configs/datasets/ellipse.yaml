@@ -1,0 +1,17 @@
+name: ellipse
+# ELLIPSE uses one common holistic English-proficiency rubric across writing topics.
+# The original writing topic is retained in demographics_json as "prompt".
+prompt_id: overall
+columns:
+  essay_id: text_id_kaggle
+  prompt_id: null
+  essay_text: Text
+  human_r1: Overall_1
+  human_r2: Overall_2
+  human_rater1: Rater_1
+  human_rater2: Rater_2
+  ell: null  # All writers are ELL; this dataset cannot estimate an ELL/non-ELL contrast.
+  scale_min: null
+  scale_max: null
+scale: {min: 1, max: 5}
+demographics: [gender, grade, race_ethnicity, SES, prompt, task, Filename]

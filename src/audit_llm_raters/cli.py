@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from audit_llm_raters.adapters.ellipse import prepare_ellipse_overall
 from audit_llm_raters.adapters.tabular import (
     dataset_gate_audit,
     normalize_essays,
@@ -32,6 +33,21 @@ def _read_scores(path: str) -> pd.DataFrame:
     if source.suffix == ".csv":
         return pd.read_csv(source)
     raise ValueError("Scores must be SQLite, parquet, or CSV")
+
+
+def _prepare_ellipse(args: argparse.Namespace) -> None:
+    essays, audit = prepare_ellipse_overall(
+        args.raw_ratings,
+        args.metadata,
+        exclude_identifying_info=not args.keep_identifying_info,
+    )
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    essays.to_csv(output, index=False)
+    audit_output = Path(args.audit_output)
+    audit_output.parent.mkdir(parents=True, exist_ok=True)
+    audit_output.write_text(json.dumps(audit, indent=2), encoding="utf-8")
+    print(json.dumps({"output": str(output), "audit": audit}, ensure_ascii=False))
 
 
 def _prepare(args: argparse.Namespace) -> None:
@@ -106,6 +122,22 @@ def _demo(args: argparse.Namespace) -> None:
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(prog="audit-raters", description="Measurement audit of LLM essay raters")
     sub = root.add_subparsers(dest="command", required=True)
+
+    prepare_ellipse = sub.add_parser(
+        "prepare-ellipse", help="Join ELLIPSE metadata to independent raw ratings"
+    )
+    prepare_ellipse.add_argument("--raw-ratings", required=True)
+    prepare_ellipse.add_argument("--metadata", required=True)
+    prepare_ellipse.add_argument("--output", default="data/interim/ellipse_overall.csv")
+    prepare_ellipse.add_argument(
+        "--audit-output", default="data/interim/ellipse_preparation_audit.json"
+    )
+    prepare_ellipse.add_argument(
+        "--keep-identifying-info",
+        action="store_true",
+        help="Retain flagged essays; excluded by default as a privacy precaution",
+    )
+    prepare_ellipse.set_defaults(func=_prepare_ellipse)
 
     prepare = sub.add_parser("prepare", help="Normalize data and draw a stratified pilot")
     prepare.add_argument("--input", required=True)
