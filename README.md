@@ -132,6 +132,8 @@ audit-raters analyze \
 
 Use `--drf-boot 0` when ELL is unavailable. After installing the `bayes` extra, add `--bayes-g` to fit the NumPyro multivariate G posterior and write an EMS-versus-Bayes comparison. Main outputs are written to `out/pilot/tables/`, figures to `out/pilot/figures/`, and a compact summary to `summary.json`. Real output directories and SQLite files are ignored by default because they can contain essay-linked information and raw responses.
 
+A one-model engineering pilot is supported without weakening the estimand definitions: the pipeline writes observed-score associations, configuration-level metrics, fixed-model configuration EMS, MFRM, compression, and failure-policy sensitivity, while marking `ρ_HL`, `π_pt`, cross-model G2, and multi-model D-study outputs as `not_estimable`. Observed Pearson/Spearman correlations from this branch are not substitutes for universe-score `ρ_HL`.
+
 ## Interpretation guardrails
 
 - `ρ_HL` is the correlation between human and LLM universe-score constructs after removing within-type random-rater error. It is not the raw correlation between one human and one LLM.
